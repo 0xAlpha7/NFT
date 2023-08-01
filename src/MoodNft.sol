@@ -5,6 +5,9 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
 contract MoodNft is ERC721 {
+    error MoodNft__CantFlipMoodIfNotOwner();
+
+
     uint256 private s_tokenCounter;  //tokenId
     string private s_sadSvgImgUri;
     string private s_happySvgImgUri;
@@ -28,7 +31,21 @@ contract MoodNft is ERC721 {
         s_tokenCounter++;
     }
 
-    function _baseURI() internal pure override {
+    function flipMood(uint256 tokenId) public {
+        // require(_isApprovedOrOwner(msg.sender, tokenId), "Not owner or approved");
+        if(!_isApprovedOrOwner(msg.sender, tokenId)){
+            revert  MoodNft__CantFlipMoodIfNotOwner();
+        }
+        if(s_tokenIdToMood[s_tokenCounter] == Mood.HAPPY){
+            s_tokenIdToMood[tokenId] = Mood.SAD ;
+        }else{
+            s_tokenIdToMood[tokenId] = Mood.HAPPY;
+        }
+        
+    }
+
+    function _baseURI() internal pure override returns(string memory){
+        return "data:application/json;base64,";
         
     }
 
@@ -42,8 +59,12 @@ contract MoodNft is ERC721 {
             imageUri = s_sadSvgImgUri;
         }
 
+        return
+        string(
+        abi.encodePacked(
+        _baseURI(),
         Base64.encode(
-        bytes(abi.encodePacked('{"name": "', name(), '", "description": "An nft that reflects the owners mood.", "attributes": [{"trait_type": "moodiness", "value": "100}], "image": "', imageUri, '"}')));
+        bytes(abi.encodePacked('{"name": "', name(), '", "description": "An nft that reflects the owners mood.", "attributes": [{"trait_type": "moodiness", "value": "100}], "image": "', imageUri, '"}'))))) ;
 
 
     }
